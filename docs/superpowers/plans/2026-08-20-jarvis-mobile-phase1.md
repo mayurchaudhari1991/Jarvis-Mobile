@@ -6,7 +6,7 @@
 
 **Architecture:** Five Gradle modules with strict dependency direction. `core-device` is pure Kotlin over injected readings, so model recommendation is testable with no hardware. `core-inference` wraps llama.cpp through JNI behind an interface with a fake implementation, so all UI work proceeds without loading a 5 GB model. `core-data` owns Room persistence and encrypted export. `ui-hud` composes them.
 
-**Tech Stack:** Kotlin 2.3.11, Jetpack Compose (BOM 2026.08.00), Gradle 9.7.1, AGP 9.3.0, Room 2.8.4, KSP 2.3.11, kotlinx-coroutines 1.11.0, OkHttp 5.5.0, llama.cpp via NDK 27+, JUnit 4.13.2, Turbine 1.2.1, Robolectric 4.16.
+**Tech Stack:** Kotlin 2.3.21, Jetpack Compose (BOM 2026.08.00), Gradle 9.7.1, AGP 9.3.1, Room 2.8.4, KSP 2.3.11, kotlinx-coroutines 1.11.0, OkHttp 5.5.0, llama.cpp via NDK 27+, JUnit 4.13.2, Turbine 1.2.1, Robolectric 4.16.
 
 **Spec:** `docs/superpowers/specs/2026-08-20-jarvis-mobile-assistant-design.md`
 
@@ -17,6 +17,7 @@
 - **No network permission beyond model download.** `INTERNET` is declared; no analytics, telemetry, crash reporting, or any other outbound call. `core-data` and `core-inference` must not declare or use network APIs.
 - **No accounts, no API keys, no cloud inference.** Any task introducing an auth flow or remote LLM call is out of scope.
 - **JVM target 17** for all modules. This is the bytecode level and is independent of the JDK running the build (the machine uses Android Studio's bundled JDK 25). Set via `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` — the old `kotlinOptions` DSL was removed in Kotlin 2.2 and will not compile.
+- **Do NOT apply `org.jetbrains.kotlin.android`.** AGP 9.0+ has built-in Kotlin support and the build FAILS if that plugin is also applied. Android modules declare only `alias(libs.plugins.android.library)` (or `android.application`), plus `kotlin.compose` where Compose is used. `core-device` is pure JVM and uses `kotlin.jvm`.
 - **Package root:** `com.jarvis.mobile`
 - **Default model:** Qwen3 8B Q4_K_M, ~4.9 GB. Fallbacks: Qwen3 4B (~3.0 GB), Qwen3 1.7B (~1.1 GB).
 - **Colors are fixed tokens** (from the approved HUD design): cool `#3FD8E8`, warm `#FF8A2A`, amber `#F2A93B`, ground `#06080B`, panel `#0C1117`, hairline `#1B2530`, text `#DDE6EF`, neutral `#8A97A6`.
@@ -107,8 +108,8 @@ Create `gradle/libs.versions.toml`:
 
 ```toml
 [versions]
-agp = "9.3.0"
-kotlin = "2.3.11"
+agp = "9.3.1"
+kotlin = "2.3.21"
 ksp = "2.3.11"
 coreKtx = "1.19.0"
 composeBom = "2026.08.00"
@@ -197,7 +198,6 @@ Create `build.gradle.kts`:
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ksp) apply false
@@ -224,7 +224,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -327,7 +326,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -948,7 +946,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -1199,7 +1196,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
 }
 
@@ -2084,7 +2080,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -2657,7 +2652,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -3466,7 +3460,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
