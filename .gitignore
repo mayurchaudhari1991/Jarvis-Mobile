@@ -4,7 +4,9 @@
 .cxx/
 .gradle/
 .idea/
+.kotlin/
 .superpowers/
 build/
 local.properties
 models/
+.docs
