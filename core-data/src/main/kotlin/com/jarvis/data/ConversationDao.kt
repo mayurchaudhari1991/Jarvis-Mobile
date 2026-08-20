@@ -22,4 +22,10 @@ interface ConversationDao {
 
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM conversations ORDER BY updatedAt DESC")
+    suspend fun observeAllOnce(): List<Conversation>
+
+    @Query("DELETE FROM conversations")
+    suspend fun deleteAll()
 }
