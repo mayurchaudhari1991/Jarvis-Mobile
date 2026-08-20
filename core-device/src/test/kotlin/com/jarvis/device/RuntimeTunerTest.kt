@@ -60,8 +60,11 @@ class RuntimeTunerTest {
 
     @Test
     fun `thread count never exceeds core count`() {
-        val p = tuner.tune(readings(cores = 2, thermal = 0.1f))
-        assertTrue(p.threadCount <= 2)
+        // cores=3 in NOMINAL: base = max(1, (3*0.75).toInt()) = 2, ceiling 3 -> 2
+        // The ceiling binds on 1 core, where the computed target would be higher.
+        val tiny = tuner.tune(readings(cores = 1, thermal = 0.85f))
+        assertEquals(1, tiny.threadCount)
+        assertTrue(tiny.threadCount <= 1)
     }
 
     @Test
@@ -70,5 +73,28 @@ class RuntimeTunerTest {
         assertEquals(ThermalState.FAIR, tuner.thermalState(0.55f))
         assertEquals(ThermalState.SEVERE, tuner.thermalState(0.8f))
         assertEquals(ThermalState.CRITICAL, tuner.thermalState(0.97f))
+    }
+
+    @Test
+    fun `thread count is clamped to core count even below the minimum`() {
+        // A single-core device cannot run MIN_THREADS. The core ceiling wins,
+        // which is correct: MIN_THREADS is a target, not a hard floor.
+        val single = tuner.tune(readings(cores = 1, thermal = 0.99f))
+        assertEquals(1, single.threadCount)
+
+        val dual = tuner.tune(readings(cores = 2, thermal = 0.1f))
+        assertEquals(1, dual.threadCount)
+    }
+
+    @Test
+    fun `batch size drops under severe thermal`() {
+        assertEquals(512, tuner.tune(readings(thermal = 0.1f)).batchSize)
+        assertEquals(128, tuner.tune(readings(thermal = 0.85f)).batchSize)
+    }
+
+    @Test
+    fun `batch size drops on low battery when unplugged`() {
+        assertEquals(128, tuner.tune(readings(battery = 10, charging = false)).batchSize)
+        assertEquals(512, tuner.tune(readings(battery = 10, charging = true)).batchSize)
     }
 }

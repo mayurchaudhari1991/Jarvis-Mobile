@@ -51,6 +51,11 @@ class RuntimeTuner {
     }
 
     private companion object {
+        /**
+         * Target floor for thread count under thermal pressure. Not an absolute
+         * guarantee: the core-count ceiling applied afterwards wins on devices
+         * with fewer cores than this, which is correct.
+         */
         const val MIN_THREADS = 2
         const val LOW_BATTERY_PERCENT = 15
         const val FULL_CONTEXT = 4096
