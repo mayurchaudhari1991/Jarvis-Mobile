@@ -1,10 +1,10 @@
+*.gguf
+*.iml
+.DS_Store
+.cxx/
 .gradle/
+.idea/
+.superpowers/
 build/
 local.properties
-*.iml
-.idea/
-.cxx/
-*.gguf
 models/
-.DS_Store
-.superpowers/
