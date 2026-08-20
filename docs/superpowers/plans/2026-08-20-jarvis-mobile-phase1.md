@@ -6,17 +6,17 @@
 
 **Architecture:** Five Gradle modules with strict dependency direction. `core-device` is pure Kotlin over injected readings, so model recommendation is testable with no hardware. `core-inference` wraps llama.cpp through JNI behind an interface with a fake implementation, so all UI work proceeds without loading a 5 GB model. `core-data` owns Room persistence and encrypted export. `ui-hud` composes them.
 
-**Tech Stack:** Kotlin 2.0.21, Jetpack Compose (BOM 2024.10.01), Gradle 8.9, AGP 8.7.2, Room 2.6.1, kotlinx-coroutines 1.9.0, OkHttp 4.12.0, llama.cpp via NDK r27c, JUnit 5.11.3, Turbine 1.2.0, Robolectric 4.13.
+**Tech Stack:** Kotlin 2.3.11, Jetpack Compose (BOM 2026.08.00), Gradle 9.7.1, AGP 9.3.0, Room 2.8.4, KSP 2.3.11, kotlinx-coroutines 1.11.0, OkHttp 5.5.0, llama.cpp via NDK 27+, JUnit 4.13.2, Turbine 1.2.1, Robolectric 4.16.
 
 **Spec:** `docs/superpowers/specs/2026-08-20-jarvis-mobile-assistant-design.md`
 
 ## Global Constraints
 
-- **minSdk 30** (Android 11). Set by `PowerManager.getThermalHeadroom`, which runtime adaptation depends on. **targetSdk 35**, **compileSdk 35**.
+- **minSdk 30** (Android 11). Set by `PowerManager.getThermalHeadroom`, which runtime adaptation depends on. **targetSdk 37**, **compileSdk 37**.
 - **ABI: `arm64-v8a` only.** No x86/x86_64 — emulators cannot run the model usefully and the extra ABIs double APK size.
 - **No network permission beyond model download.** `INTERNET` is declared; no analytics, telemetry, crash reporting, or any other outbound call. `core-data` and `core-inference` must not declare or use network APIs.
 - **No accounts, no API keys, no cloud inference.** Any task introducing an auth flow or remote LLM call is out of scope.
-- **JVM target 17** for all modules.
+- **JVM target 17** for all modules. This is the bytecode level and is independent of the JDK running the build (the machine uses Android Studio's bundled JDK 25). Set via `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` — the old `kotlinOptions` DSL was removed in Kotlin 2.2 and will not compile.
 - **Package root:** `com.jarvis.mobile`
 - **Default model:** Qwen3 8B Q4_K_M, ~4.9 GB. Fallbacks: Qwen3 4B (~3.0 GB), Qwen3 1.7B (~1.1 GB).
 - **Colors are fixed tokens** (from the approved HUD design): cool `#3FD8E8`, warm `#FF8A2A`, amber `#F2A93B`, ground `#06080B`, panel `#0C1117`, hairline `#1B2530`, text `#DDE6EF`, neutral `#8A97A6`.
@@ -107,21 +107,21 @@ Create `gradle/libs.versions.toml`:
 
 ```toml
 [versions]
-agp = "8.7.2"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.28"
-coreKtx = "1.15.0"
-composeBom = "2024.10.01"
-activityCompose = "1.9.3"
-lifecycle = "2.8.7"
-room = "2.6.1"
-coroutines = "1.9.0"
-okhttp = "4.12.0"
+agp = "9.3.0"
+kotlin = "2.3.11"
+ksp = "2.3.11"
+coreKtx = "1.19.0"
+composeBom = "2026.08.00"
+activityCompose = "1.13.0"
+lifecycle = "2.11.0"
+room = "2.8.4"
+coroutines = "1.11.0"
+okhttp = "5.5.0"
 junit4 = "4.13.2"
-turbine = "1.2.0"
-robolectric = "4.13"
-androidxTestCore = "1.6.1"
-androidxJunit = "1.2.1"
+turbine = "1.2.1"
+robolectric = "4.16"
+androidxTestCore = "1.7.0"
+androidxJunit = "1.3.0"
 
 [libraries]
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -180,7 +180,15 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "JarvisMobile"
-include(":app", ":core-device", ":core-model", ":core-inference", ":core-data", ":ui-hud")
+include(
+    ":app",
+    ":core-device",
+    ":core-device-android",
+    ":core-model",
+    ":core-inference",
+    ":core-data",
+    ":ui-hud"
+)
 ```
 
 Create `build.gradle.kts`:
@@ -212,6 +220,8 @@ kotlin.code.style=official
 Create `app/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -220,12 +230,12 @@ plugins {
 
 android {
     namespace = "com.jarvis.mobile"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jarvis.mobile"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
         ndk { abiFilters += "arm64-v8a" }
@@ -238,8 +248,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 dependencies {
@@ -298,10 +313,66 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
+- [ ] **Step 7b: Create placeholder modules so Gradle can configure**
+
+`settings.gradle.kts` declares seven modules; Gradle fails at configuration
+time if an included module directory has no build file. Create a minimal stub
+for each of the six library modules. Later tasks replace these entirely.
+
+For each of `core-device-android`, `core-model`, `core-inference`, `core-data`,
+`ui-hud`, create `<module>/build.gradle.kts`:
+
+```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "com.jarvis.placeholder.MODULE_NAME"
+    compileSdk = 37
+    defaultConfig { minSdk = 30 }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
+}
+```
+
+Replace `MODULE_NAME` with the module's own name with hyphens removed, so each
+namespace is unique: `coredeviceandroid`, `coremodel`, `coreinference`,
+`coredata`, `uihud`. Two modules sharing a namespace is a build error.
+
+Also create `<module>/src/main/AndroidManifest.xml` for each:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest />
+```
+
+And for `core-device` only, which is a pure JVM module, create
+`core-device/build.gradle.kts`:
+
+```kotlin
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+}
+
+kotlin { jvmToolchain(17) }
+```
+
 - [ ] **Step 8: Generate the Gradle wrapper and build**
 
 ```bash
-gradle wrapper --gradle-version 8.9
+gradle wrapper --gradle-version 9.7.1
 ./gradlew :app:assembleDebug
 ```
 
@@ -856,19 +927,25 @@ The single place that touches Android APIs. Kept in its own module so `core-devi
 - Consumes: `DeviceReadings` from Task 1
 - Produces: `class AndroidDeviceProbe(context: Context) { fun read(): DeviceReadings }`
 
-- [ ] **Step 1: Add the module to settings**
+- [ ] **Step 1: Verify the module is already declared**
 
-In `settings.gradle.kts`, change the include line to:
+Task 0 declared all seven modules up front, so no edit is needed here. Confirm:
 
-```kotlin
-include(":app", ":core-device", ":core-device-android", ":core-model", ":core-inference", ":core-data", ":ui-hud")
+```bash
+grep -c "core-device-android" settings.gradle.kts
 ```
+
+Expected: `1`. If it prints `0`, add `":core-device-android",` to the `include(...)` list in `settings.gradle.kts`.
+
+This task replaces the placeholder `core-device-android/build.gradle.kts` that Task 0 created as a stub.
 
 - [ ] **Step 2: Create the module build file**
 
 Create `core-device-android/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -876,14 +953,19 @@ plugins {
 
 android {
     namespace = "com.jarvis.device.android"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 dependencies {
@@ -1113,6 +1195,8 @@ the tuner re-reads shortly and a crash is worse than a stale sample."
 Create `core-data/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -1121,14 +1205,19 @@ plugins {
 
 android {
     namespace = "com.jarvis.data"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 dependencies {
@@ -1991,6 +2080,8 @@ A 4.9 GB download over mobile will be interrupted. Resume and verification are t
 Create `core-model/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -1998,14 +2089,19 @@ plugins {
 
 android {
     namespace = "com.jarvis.model"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 dependencies {
@@ -2557,6 +2653,8 @@ Written before the JNI work deliberately. The fake unblocks every UI task, so th
 Create `core-inference/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -2564,7 +2662,7 @@ plugins {
 
 android {
     namespace = "com.jarvis.inference"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
         minSdk = 30
         ndk { abiFilters += "arm64-v8a" }
@@ -2573,8 +2671,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 dependencies {
@@ -3359,6 +3462,8 @@ Kotlin side."
 Create `ui-hud/build.gradle.kts`:
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -3367,7 +3472,7 @@ plugins {
 
 android {
     namespace = "com.jarvis.hud"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
         minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -3376,8 +3481,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
