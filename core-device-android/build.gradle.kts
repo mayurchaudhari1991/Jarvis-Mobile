@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.device.android"
+    namespace = "com.veg.device.android"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {

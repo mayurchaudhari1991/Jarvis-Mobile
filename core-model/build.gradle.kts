@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.model"
+    namespace = "com.veg.model"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {

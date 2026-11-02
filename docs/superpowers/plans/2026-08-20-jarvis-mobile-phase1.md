@@ -1,4 +1,4 @@
-# JARVIS Mobile Phase 1 Implementation Plan
+# Veg Mobile Phase 1 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -18,7 +18,7 @@
 - **No accounts, no API keys, no cloud inference.** Any task introducing an auth flow or remote LLM call is out of scope.
 - **JVM target 17** for all modules. This is the bytecode level and is independent of the JDK running the build (the machine uses Android Studio's bundled JDK 25). Set via `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` — the old `kotlinOptions` DSL was removed in Kotlin 2.2 and will not compile.
 - **Do NOT apply `org.jetbrains.kotlin.android`.** AGP 9.0+ has built-in Kotlin support and the build FAILS if that plugin is also applied. Android modules declare only `alias(libs.plugins.android.library)` (or `android.application`), plus `kotlin.compose` where Compose is used. `core-device` is pure JVM and uses `kotlin.jvm`.
-- **Package root:** `com.jarvis.mobile`
+- **Package root:** `com.veg.assistant`
 - **Default model:** Qwen3 8B Q4_K_M, ~4.9 GB. Fallbacks: Qwen3 4B (~3.0 GB), Qwen3 1.7B (~1.1 GB).
 - **Colors are fixed tokens** (from the approved HUD design): cool `#3FD8E8`, warm `#FF8A2A`, amber `#F2A93B`, ground `#06080B`, panel `#0C1117`, hairline `#1B2530`, text `#DDE6EF`, neutral `#8A97A6`.
 - **Single dark theme.** No light theme, no `isSystemInDarkTheme()` branching.
@@ -36,7 +36,7 @@ Dependency direction is strict and enforced by Gradle: `app` → `ui-hud` → {`
 | `core-device` | `DeviceReadings.kt`, `ModelCandidate.kt`, `ModelRecommender.kt`, `RuntimeTuner.kt`, `AndroidDeviceProbe.kt` | Pure scoring logic plus one thin Android adapter |
 | `core-model` | `ModelSpec.kt`, `ModelRepository.kt`, `ModelDownloader.kt`, `Sha256Verifier.kt` | Resumable download, verification, on-disk storage |
 | `core-inference` | `InferenceEngine.kt`, `LlamaEngine.kt`, `FakeEngine.kt`, `InferenceConfig.kt`, `llama_jni.cpp`, `CMakeLists.txt` | Token streaming behind a swappable interface |
-| `core-data` | `JarvisDatabase.kt`, `Conversation.kt`, `Message.kt`, `MessageDao.kt`, `ConversationDao.kt`, `BackupCodec.kt` | Room persistence plus AES-256 export/import |
+| `core-data` | `VegDatabase.kt`, `Conversation.kt`, `Message.kt`, `MessageDao.kt`, `ConversationDao.kt`, `BackupCodec.kt` | Room persistence plus AES-256 export/import |
 | `ui-hud` | `Reactor.kt`, `ReactorState.kt`, `ChatScreen.kt`, `BootScreen.kt`, `TelemetryChips.kt`, `Theme.kt`, `ChatViewModel.kt` | The interface |
 | `app` | `MainActivity.kt`, `AndroidManifest.xml` | Entry point and wiring |
 
@@ -50,7 +50,7 @@ Files are split by responsibility, not by layer. `Reactor.kt` holds only drawing
 
 **Files:**
 - Create: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`
-- Create: `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/java/com/jarvis/mobile/MainActivity.kt`
+- Create: `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/java/com/veg/assistant/MainActivity.kt`
 
 **Interfaces:**
 - Consumes: nothing
@@ -180,7 +180,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "JarvisMobile"
+rootProject.name = "Veg"
 include(
     ":app",
     ":core-device",
@@ -228,11 +228,11 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.mobile"
+    namespace = "com.veg.assistant"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.jarvis.mobile"
+        applicationId = "com.veg.assistant"
         minSdk = 30
         targetSdk = 37
         versionCode = 1
@@ -277,7 +277,7 @@ Create `app/src/main/AndroidManifest.xml`:
 
     <application
         android:allowBackup="false"
-        android:label="JARVIS"
+        android:label="Veg"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
@@ -294,10 +294,10 @@ Create `app/src/main/AndroidManifest.xml`:
 </manifest>
 ```
 
-Create `app/src/main/java/com/jarvis/mobile/MainActivity.kt`:
+Create `app/src/main/java/com/veg/assistant/MainActivity.kt`:
 
 ```kotlin
-package com.jarvis.mobile
+package com.veg.assistant
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -307,7 +307,7 @@ import androidx.compose.material3.Text
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Text("JARVIS") }
+        setContent { Text("Veg") }
     }
 }
 ```
@@ -329,7 +329,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.placeholder.MODULE_NAME"
+    namespace = "com.veg.placeholder.MODULE_NAME"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
@@ -386,7 +386,7 @@ sdk.dir=C\:\\Users\\simpl\\AppData\\Local\\Android\\Sdk
 ./gradlew :app:installDebug
 ```
 
-Expected: `Installed on 1 device`, and opening the app shows the text "JARVIS".
+Expected: `Installed on 1 device`, and opening the app shows the text "Veg".
 
 - [ ] **Step 10: Commit**
 
@@ -406,10 +406,10 @@ Pure Kotlin, no Android dependency. Readings are injected, so every threshold is
 
 **Files:**
 - Create: `core-device/build.gradle.kts`
-- Create: `core-device/src/main/kotlin/com/jarvis/device/DeviceReadings.kt`
-- Create: `core-device/src/main/kotlin/com/jarvis/device/ModelCandidate.kt`
-- Create: `core-device/src/main/kotlin/com/jarvis/device/ModelRecommender.kt`
-- Test: `core-device/src/test/kotlin/com/jarvis/device/ModelRecommenderTest.kt`
+- Create: `core-device/src/main/kotlin/com/veg/device/DeviceReadings.kt`
+- Create: `core-device/src/main/kotlin/com/veg/device/ModelCandidate.kt`
+- Create: `core-device/src/main/kotlin/com/veg/device/ModelRecommender.kt`
+- Test: `core-device/src/test/kotlin/com/veg/device/ModelRecommenderTest.kt`
 
 **Interfaces:**
 - Consumes: version catalog aliases from Task 0
@@ -440,10 +440,10 @@ tasks.withType<Test> { useJUnit() }
 
 - [ ] **Step 2: Write the failing test**
 
-Create `core-device/src/test/kotlin/com/jarvis/device/ModelRecommenderTest.kt`:
+Create `core-device/src/test/kotlin/com/veg/device/ModelRecommenderTest.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -540,10 +540,10 @@ Expected: FAIL — `Unresolved reference: DeviceReadings`.
 
 - [ ] **Step 4: Write the data models**
 
-Create `core-device/src/main/kotlin/com/jarvis/device/DeviceReadings.kt`:
+Create `core-device/src/main/kotlin/com/veg/device/DeviceReadings.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 /**
  * A snapshot of everything the recommender is allowed to know about the device.
@@ -566,10 +566,10 @@ data class DeviceReadings(
 )
 ```
 
-Create `core-device/src/main/kotlin/com/jarvis/device/ModelCandidate.kt`:
+Create `core-device/src/main/kotlin/com/veg/device/ModelCandidate.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 data class ModelCandidate(
     val id: String,
@@ -623,10 +623,10 @@ data class Recommendation(
 
 - [ ] **Step 5: Write the recommender**
 
-Create `core-device/src/main/kotlin/com/jarvis/device/ModelRecommender.kt`:
+Create `core-device/src/main/kotlin/com/veg/device/ModelRecommender.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 /**
  * Picks the best model the device can actually hold.
@@ -722,8 +722,8 @@ flagships."
 Thermal headroom and battery tune thread count, context size, and batch size during use. They never swap models, because those signals are transient.
 
 **Files:**
-- Create: `core-device/src/main/kotlin/com/jarvis/device/RuntimeTuner.kt`
-- Test: `core-device/src/test/kotlin/com/jarvis/device/RuntimeTunerTest.kt`
+- Create: `core-device/src/main/kotlin/com/veg/device/RuntimeTuner.kt`
+- Test: `core-device/src/test/kotlin/com/veg/device/RuntimeTunerTest.kt`
 
 **Interfaces:**
 - Consumes: `DeviceReadings` from Task 1
@@ -734,10 +734,10 @@ Thermal headroom and battery tune thread count, context size, and batch size dur
 
 - [ ] **Step 1: Write the failing test**
 
-Create `core-device/src/test/kotlin/com/jarvis/device/RuntimeTunerTest.kt`:
+Create `core-device/src/test/kotlin/com/veg/device/RuntimeTunerTest.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -823,10 +823,10 @@ Expected: FAIL — `Unresolved reference: RuntimeTuner`.
 
 - [ ] **Step 3: Write the tuner**
 
-Create `core-device/src/main/kotlin/com/jarvis/device/RuntimeTuner.kt`:
+Create `core-device/src/main/kotlin/com/veg/device/RuntimeTuner.kt`:
 
 ```kotlin
-package com.jarvis.device
+package com.veg.device
 
 data class RuntimeParams(
     val threadCount: Int,
@@ -917,8 +917,8 @@ The single place that touches Android APIs. Kept in its own module so `core-devi
 **Files:**
 - Create: `core-device-android/build.gradle.kts`
 - Create: `core-device-android/src/main/AndroidManifest.xml`
-- Create: `core-device-android/src/main/kotlin/com/jarvis/device/android/AndroidDeviceProbe.kt`
-- Test: `core-device-android/src/test/kotlin/com/jarvis/device/android/AndroidDeviceProbeTest.kt`
+- Create: `core-device-android/src/main/kotlin/com/veg/device/android/AndroidDeviceProbe.kt`
+- Test: `core-device-android/src/test/kotlin/com/veg/device/android/AndroidDeviceProbeTest.kt`
 - Modify: `settings.gradle.kts` — add `:core-device-android` to the `include(...)` list
 
 **Interfaces:**
@@ -949,7 +949,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.device.android"
+    namespace = "com.veg.device.android"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
@@ -984,10 +984,10 @@ Create `core-device-android/src/main/AndroidManifest.xml`:
 
 - [ ] **Step 3: Write the failing test**
 
-Create `core-device-android/src/test/kotlin/com/jarvis/device/android/AndroidDeviceProbeTest.kt`:
+Create `core-device-android/src/test/kotlin/com/veg/device/android/AndroidDeviceProbeTest.kt`:
 
 ```kotlin
-package com.jarvis.device.android
+package com.veg.device.android
 
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertTrue
@@ -1047,10 +1047,10 @@ Expected: FAIL — `Unresolved reference: AndroidDeviceProbe`.
 
 - [ ] **Step 5: Write the probe**
 
-Create `core-device-android/src/main/kotlin/com/jarvis/device/android/AndroidDeviceProbe.kt`:
+Create `core-device-android/src/main/kotlin/com/veg/device/android/AndroidDeviceProbe.kt`:
 
 ```kotlin
-package com.jarvis.device.android
+package com.veg.device.android
 
 import android.app.ActivityManager
 import android.content.Context
@@ -1059,7 +1059,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.StatFs
 import androidx.core.content.getSystemService
-import com.jarvis.device.DeviceReadings
+import com.veg.device.DeviceReadings
 
 /**
  * Fills a [DeviceReadings] from Android system services.
@@ -1170,12 +1170,12 @@ the tuner re-reads shortly and a crash is worse than a stale sample."
 
 **Files:**
 - Create: `core-data/build.gradle.kts`, `core-data/src/main/AndroidManifest.xml`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/Conversation.kt`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/Message.kt`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/ConversationDao.kt`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/MessageDao.kt`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/JarvisDatabase.kt`
-- Test: `core-data/src/test/kotlin/com/jarvis/data/JarvisDatabaseTest.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/Conversation.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/Message.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/ConversationDao.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/MessageDao.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/VegDatabase.kt`
+- Test: `core-data/src/test/kotlin/com/veg/data/VegDatabaseTest.kt`
 
 **Interfaces:**
 - Consumes: version catalog aliases from Task 0
@@ -1184,7 +1184,7 @@ the tuner re-reads shortly and a crash is worse than a stale sample."
   - `@Entity data class Message(id: Long, conversationId: Long, role: String, content: String, createdAt: Long, tokensPerSecond: Float?)`
   - `interface ConversationDao { suspend fun insert(c: Conversation): Long; fun observeAll(): Flow<List<Conversation>>; suspend fun byId(id: Long): Conversation?; suspend fun touch(id: Long, at: Long); suspend fun delete(id: Long) }`
   - `interface MessageDao { suspend fun insert(m: Message): Long; fun observeForConversation(conversationId: Long): Flow<List<Message>>; suspend fun forConversation(conversationId: Long): List<Message>; suspend fun deleteForConversation(conversationId: Long) }`
-  - `abstract class JarvisDatabase : RoomDatabase { abstract fun conversations(): ConversationDao; abstract fun messages(): MessageDao }`
+  - `abstract class VegDatabase : RoomDatabase { abstract fun conversations(): ConversationDao; abstract fun messages(): MessageDao }`
   - Role constants: `Message.ROLE_USER = "user"`, `Message.ROLE_ASSISTANT = "assistant"`
 
 - [ ] **Step 1: Create the module build file**
@@ -1200,7 +1200,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.data"
+    namespace = "com.veg.data"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
@@ -1240,10 +1240,10 @@ Create `core-data/src/main/AndroidManifest.xml`:
 
 - [ ] **Step 2: Write the failing test**
 
-Create `core-data/src/test/kotlin/com/jarvis/data/JarvisDatabaseTest.kt`:
+Create `core-data/src/test/kotlin/com/veg/data/VegDatabaseTest.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -1260,15 +1260,15 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
-class JarvisDatabaseTest {
+class VegDatabaseTest {
 
-    private lateinit var db: JarvisDatabase
+    private lateinit var db: VegDatabase
 
     @Before
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            JarvisDatabase::class.java
+            VegDatabase::class.java
         ).allowMainThreadQueries().build()
     }
 
@@ -1371,14 +1371,14 @@ class JarvisDatabaseTest {
 ./gradlew :core-data:test
 ```
 
-Expected: FAIL — `Unresolved reference: JarvisDatabase`.
+Expected: FAIL — `Unresolved reference: VegDatabase`.
 
 - [ ] **Step 4: Write the entities**
 
-Create `core-data/src/main/kotlin/com/jarvis/data/Conversation.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/Conversation.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -1392,10 +1392,10 @@ data class Conversation(
 )
 ```
 
-Create `core-data/src/main/kotlin/com/jarvis/data/Message.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/Message.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -1432,10 +1432,10 @@ data class Message(
 
 - [ ] **Step 5: Write the DAOs and database**
 
-Create `core-data/src/main/kotlin/com/jarvis/data/ConversationDao.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/ConversationDao.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -1462,10 +1462,10 @@ interface ConversationDao {
 }
 ```
 
-Create `core-data/src/main/kotlin/com/jarvis/data/MessageDao.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/MessageDao.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -1489,10 +1489,10 @@ interface MessageDao {
 }
 ```
 
-Create `core-data/src/main/kotlin/com/jarvis/data/JarvisDatabase.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/VegDatabase.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import android.content.Context
 import androidx.room.Database
@@ -1505,17 +1505,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     version = 1,
     exportSchema = false
 )
-abstract class JarvisDatabase : RoomDatabase() {
+abstract class VegDatabase : RoomDatabase() {
 
     abstract fun conversations(): ConversationDao
     abstract fun messages(): MessageDao
 
     companion object {
-        fun open(context: Context): JarvisDatabase =
+        fun open(context: Context): VegDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
-                JarvisDatabase::class.java,
-                "jarvis.db"
+                VegDatabase::class.java,
+                "veg.db"
             )
                 // Foreign keys are off by default in SQLite; the cascade delete
                 // on messages depends on them being enabled per connection.
@@ -1531,12 +1531,12 @@ abstract class JarvisDatabase : RoomDatabase() {
 
 - [ ] **Step 6: Enable foreign keys in the in-memory test database**
 
-Room's `inMemoryDatabaseBuilder` does not run the `open` companion, so the cascade test needs the same pragma. In `JarvisDatabaseTest.setUp`, replace the builder with:
+Room's `inMemoryDatabaseBuilder` does not run the `open` companion, so the cascade test needs the same pragma. In `VegDatabaseTest.setUp`, replace the builder with:
 
 ```kotlin
 db = Room.inMemoryDatabaseBuilder(
     ApplicationProvider.getApplicationContext(),
-    JarvisDatabase::class.java
+    VegDatabase::class.java
 )
     .allowMainThreadQueries()
     .addCallback(object : androidx.room.RoomDatabase.Callback() {
@@ -1573,26 +1573,26 @@ Assistant messages carry measured tok/s for the HUD."
 Manual export is the only backup path in this design, so the round trip must be exact and the crypto must be correct.
 
 **Files:**
-- Create: `core-data/src/main/kotlin/com/jarvis/data/BackupCodec.kt`
-- Create: `core-data/src/main/kotlin/com/jarvis/data/BackupRepository.kt`
-- Test: `core-data/src/test/kotlin/com/jarvis/data/BackupCodecTest.kt`
-- Test: `core-data/src/test/kotlin/com/jarvis/data/BackupRepositoryTest.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/BackupCodec.kt`
+- Create: `core-data/src/main/kotlin/com/veg/data/BackupRepository.kt`
+- Test: `core-data/src/test/kotlin/com/veg/data/BackupCodecTest.kt`
+- Test: `core-data/src/test/kotlin/com/veg/data/BackupRepositoryTest.kt`
 
 **Interfaces:**
-- Consumes: `JarvisDatabase`, `Conversation`, `Message` from Task 4
+- Consumes: `VegDatabase`, `Conversation`, `Message` from Task 4
 - Produces:
   - `data class BackupPayload(conversations: List<Conversation>, messages: List<Message>)`
   - `object BackupCodec { fun encrypt(payload: BackupPayload, passphrase: CharArray): ByteArray; fun decrypt(blob: ByteArray, passphrase: CharArray): BackupPayload }`
   - `class WrongPassphraseException : Exception`
   - `class CorruptBackupException(message: String) : Exception`
-  - `class BackupRepository(db: JarvisDatabase) { suspend fun export(passphrase: CharArray): ByteArray; suspend fun import(blob: ByteArray, passphrase: CharArray) }`
+  - `class BackupRepository(db: VegDatabase) { suspend fun export(passphrase: CharArray): ByteArray; suspend fun import(blob: ByteArray, passphrase: CharArray) }`
 
 - [ ] **Step 1: Write the failing codec test**
 
-Create `core-data/src/test/kotlin/com/jarvis/data/BackupCodecTest.kt`:
+Create `core-data/src/test/kotlin/com/veg/data/BackupCodecTest.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -1699,10 +1699,10 @@ Expected: FAIL — `Unresolved reference: BackupCodec`.
 
 - [ ] **Step 3: Write the codec**
 
-Create `core-data/src/main/kotlin/com/jarvis/data/BackupCodec.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/BackupCodec.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1765,7 +1765,7 @@ object BackupCodec {
             throw CorruptBackupException("File is too short to be a backup")
         }
         if (!blob.copyOfRange(0, 4).contentEquals(MAGIC)) {
-            throw CorruptBackupException("Not a JARVIS backup file")
+            throw CorruptBackupException("Not a Veg backup file")
         }
         if (blob[4] != VERSION) {
             throw CorruptBackupException("Backup format version ${blob[4]} is not supported")
@@ -1872,10 +1872,10 @@ Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Write the failing repository test**
 
-Create `core-data/src/test/kotlin/com/jarvis/data/BackupRepositoryTest.kt`:
+Create `core-data/src/test/kotlin/com/veg/data/BackupRepositoryTest.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -1894,13 +1894,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [30])
 class BackupRepositoryTest {
 
-    private lateinit var db: JarvisDatabase
+    private lateinit var db: VegDatabase
     private lateinit var repo: BackupRepository
 
-    private fun newDb(): JarvisDatabase =
+    private fun newDb(): VegDatabase =
         Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            JarvisDatabase::class.java
+            VegDatabase::class.java
         )
             .allowMainThreadQueries()
             .addCallback(object : RoomDatabase.Callback() {
@@ -1990,10 +1990,10 @@ Add to `ConversationDao`:
     suspend fun deleteAll()
 ```
 
-Create `core-data/src/main/kotlin/com/jarvis/data/BackupRepository.kt`:
+Create `core-data/src/main/kotlin/com/veg/data/BackupRepository.kt`:
 
 ```kotlin
-package com.jarvis.data
+package com.veg.data
 
 import androidx.room.withTransaction
 
@@ -2005,7 +2005,7 @@ import androidx.room.withTransaction
  * happened. The replace runs in a transaction so a failure part-way leaves the
  * existing data intact.
  */
-class BackupRepository(private val db: JarvisDatabase) {
+class BackupRepository(private val db: VegDatabase) {
 
     suspend fun export(passphrase: CharArray): ByteArray {
         val conversations = db.conversations().observeAllOnce()
@@ -2053,12 +2053,12 @@ A 4.9 GB download over mobile will be interrupted. Resume and verification are t
 
 **Files:**
 - Create: `core-model/build.gradle.kts`, `core-model/src/main/AndroidManifest.xml`
-- Create: `core-model/src/main/kotlin/com/jarvis/model/ModelSpec.kt`
-- Create: `core-model/src/main/kotlin/com/jarvis/model/Sha256Verifier.kt`
-- Create: `core-model/src/main/kotlin/com/jarvis/model/ModelDownloader.kt`
-- Create: `core-model/src/main/kotlin/com/jarvis/model/ModelRepository.kt`
-- Test: `core-model/src/test/kotlin/com/jarvis/model/ModelDownloaderTest.kt`
-- Test: `core-model/src/test/kotlin/com/jarvis/model/ModelRepositoryTest.kt`
+- Create: `core-model/src/main/kotlin/com/veg/model/ModelSpec.kt`
+- Create: `core-model/src/main/kotlin/com/veg/model/Sha256Verifier.kt`
+- Create: `core-model/src/main/kotlin/com/veg/model/ModelDownloader.kt`
+- Create: `core-model/src/main/kotlin/com/veg/model/ModelRepository.kt`
+- Test: `core-model/src/test/kotlin/com/veg/model/ModelDownloaderTest.kt`
+- Test: `core-model/src/test/kotlin/com/veg/model/ModelRepositoryTest.kt`
 - Modify: `settings.gradle.kts` — `:core-model` is already included from Task 0
 
 **Interfaces:**
@@ -2083,7 +2083,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.model"
+    namespace = "com.veg.model"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
@@ -2124,10 +2124,10 @@ Create `core-model/src/main/AndroidManifest.xml`:
 
 - [ ] **Step 2: Write the failing downloader test**
 
-Create `core-model/src/test/kotlin/com/jarvis/model/ModelDownloaderTest.kt`:
+Create `core-model/src/test/kotlin/com/veg/model/ModelDownloaderTest.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
@@ -2293,10 +2293,10 @@ Expected: FAIL — `Unresolved reference: ModelSpec`.
 
 - [ ] **Step 4: Write the spec and verifier**
 
-Create `core-model/src/main/kotlin/com/jarvis/model/ModelSpec.kt`:
+Create `core-model/src/main/kotlin/com/veg/model/ModelSpec.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 data class ModelSpec(
     val id: String,
@@ -2340,10 +2340,10 @@ object ModelRegistry {
 }
 ```
 
-Create `core-model/src/main/kotlin/com/jarvis/model/Sha256Verifier.kt`:
+Create `core-model/src/main/kotlin/com/veg/model/Sha256Verifier.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 import java.io.File
 import java.security.MessageDigest
@@ -2368,10 +2368,10 @@ object Sha256Verifier {
 
 - [ ] **Step 5: Write the downloader**
 
-Create `core-model/src/main/kotlin/com/jarvis/model/ModelDownloader.kt`:
+Create `core-model/src/main/kotlin/com/veg/model/ModelDownloader.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -2519,10 +2519,10 @@ Note: the "already complete file" test writes a 4096-byte file while `spec.sizeB
 
 - [ ] **Step 7: Write the failing repository test**
 
-Create `core-model/src/test/kotlin/com/jarvis/model/ModelRepositoryTest.kt`:
+Create `core-model/src/test/kotlin/com/veg/model/ModelRepositoryTest.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -2574,10 +2574,10 @@ class ModelRepositoryTest {
 
 - [ ] **Step 8: Write the repository**
 
-Create `core-model/src/main/kotlin/com/jarvis/model/ModelRepository.kt`:
+Create `core-model/src/main/kotlin/com/veg/model/ModelRepository.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
 import java.io.File
 
@@ -2629,10 +2629,10 @@ Written before the JNI work deliberately. The fake unblocks every UI task, so th
 
 **Files:**
 - Create: `core-inference/build.gradle.kts`, `core-inference/src/main/AndroidManifest.xml`
-- Create: `core-inference/src/main/kotlin/com/jarvis/inference/InferenceEngine.kt`
-- Create: `core-inference/src/main/kotlin/com/jarvis/inference/InferenceConfig.kt`
-- Create: `core-inference/src/main/kotlin/com/jarvis/inference/FakeEngine.kt`
-- Test: `core-inference/src/test/kotlin/com/jarvis/inference/FakeEngineTest.kt`
+- Create: `core-inference/src/main/kotlin/com/veg/inference/InferenceEngine.kt`
+- Create: `core-inference/src/main/kotlin/com/veg/inference/InferenceConfig.kt`
+- Create: `core-inference/src/main/kotlin/com/veg/inference/FakeEngine.kt`
+- Test: `core-inference/src/test/kotlin/com/veg/inference/FakeEngineTest.kt`
 
 **Interfaces:**
 - Consumes: `RuntimeParams` from Task 2
@@ -2655,7 +2655,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.inference"
+    namespace = "com.veg.inference"
     compileSdk = 37
     defaultConfig {
         minSdk = 30
@@ -2694,10 +2694,10 @@ Create `core-inference/src/main/AndroidManifest.xml`:
 
 - [ ] **Step 2: Write the failing test**
 
-Create `core-inference/src/test/kotlin/com/jarvis/inference/FakeEngineTest.kt`:
+Create `core-inference/src/test/kotlin/com/veg/inference/FakeEngineTest.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
@@ -2762,7 +2762,7 @@ class FakeEngineTest {
 
     @Test
     fun `runtime params convert to inference config`() {
-        val params = com.jarvis.device.RuntimeParams(threadCount = 6, contextTokens = 4096, batchSize = 512)
+        val params = com.veg.device.RuntimeParams(threadCount = 6, contextTokens = 4096, batchSize = 512)
         val converted = params.toInferenceConfig()
         assertEquals(6, converted.threadCount)
         assertEquals(4096, converted.contextTokens)
@@ -2781,12 +2781,12 @@ Expected: FAIL — `Unresolved reference: InferenceConfig`.
 
 - [ ] **Step 4: Write the interface and config**
 
-Create `core-inference/src/main/kotlin/com/jarvis/inference/InferenceConfig.kt`:
+Create `core-inference/src/main/kotlin/com/veg/inference/InferenceConfig.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
-import com.jarvis.device.RuntimeParams
+import com.veg.device.RuntimeParams
 
 data class InferenceConfig(
     val threadCount: Int,
@@ -2801,10 +2801,10 @@ fun RuntimeParams.toInferenceConfig() = InferenceConfig(
 )
 ```
 
-Create `core-inference/src/main/kotlin/com/jarvis/inference/InferenceEngine.kt`:
+Create `core-inference/src/main/kotlin/com/veg/inference/InferenceEngine.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
 import kotlinx.coroutines.flow.Flow
 import java.io.File
@@ -2842,10 +2842,10 @@ interface InferenceEngine {
 
 - [ ] **Step 5: Write the fake**
 
-Create `core-inference/src/main/kotlin/com/jarvis/inference/FakeEngine.kt`:
+Create `core-inference/src/main/kotlin/com/veg/inference/FakeEngine.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -2940,8 +2940,8 @@ native layer exists."
 **Files:**
 - Create: `core-inference/src/main/cpp/CMakeLists.txt`
 - Create: `core-inference/src/main/cpp/llama_jni.cpp`
-- Create: `core-inference/src/main/kotlin/com/jarvis/inference/LlamaEngine.kt`
-- Create: `core-inference/src/androidTest/kotlin/com/jarvis/inference/LlamaEngineInstrumentedTest.kt`
+- Create: `core-inference/src/main/kotlin/com/veg/inference/LlamaEngine.kt`
+- Create: `core-inference/src/androidTest/kotlin/com/veg/inference/LlamaEngineInstrumentedTest.kt`
 - Modify: `core-inference/build.gradle.kts` — add the `externalNativeBuild` block
 - Create: `.gitmodules` (via `git submodule add`)
 
@@ -2953,12 +2953,14 @@ native layer exists."
 
 ```bash
 git submodule add https://github.com/ggerganov/llama.cpp core-inference/src/main/cpp/llama.cpp
-cd core-inference/src/main/cpp/llama.cpp && git checkout b4585 && cd -
+cd core-inference/src/main/cpp/llama.cpp && git checkout b8148 && cd -
 git add .gitmodules core-inference/src/main/cpp/llama.cpp
-git commit -m "chore: vendor llama.cpp at b4585"
+git commit -m "chore: vendor llama.cpp at b8148"
 ```
 
 Pinning a tag matters: llama.cpp's API changes frequently and an unpinned submodule will break the build at an unpredictable time.
+
+**2026-08-20 update:** originally pinned at b4585 (later b6389), both predating `qwen35` architecture support (Qwen3.5 models loaded with "unknown model architecture: 'qwen35'"). Support landed in PR #19468 (first released as tag b7990), but b7990 shipped with issue #19864 — severe prompt-processing regressions and crashes on qwen35/qwen35moe graph splits. Bumped instead to **b8148**, which includes the fix (PR #19866, "models : fix graph splits"). The C API used by `llama_jni.cpp` (all 24 symbols) is byte-identical between the old pin and b8148, so no JNI changes were required.
 
 - [ ] **Step 2: Add the native build to Gradle**
 
@@ -2997,7 +2999,7 @@ Create `core-inference/src/main/cpp/CMakeLists.txt`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.22.1)
-project(jarvis_llama)
+project(veg_llama)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -3011,9 +3013,9 @@ set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(llama.cpp)
 
-add_library(jarvis_llama SHARED llama_jni.cpp)
+add_library(veg_llama SHARED llama_jni.cpp)
 
-target_link_libraries(jarvis_llama
+target_link_libraries(veg_llama
     llama
     android
     log
@@ -3033,7 +3035,7 @@ Create `core-inference/src/main/cpp/llama_jni.cpp`:
 
 #include "llama.h"
 
-#define LOG_TAG "JarvisLlama"
+#define LOG_TAG "VegLlama"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -3056,12 +3058,12 @@ Session* as_session(jlong handle) {
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_jarvis_inference_LlamaEngine_nativeInit(JNIEnv*, jobject) {
+Java_com_veg_inference_LlamaEngine_nativeInit(JNIEnv*, jobject) {
     llama_backend_init();
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_jarvis_inference_LlamaEngine_nativeLoad(
+Java_com_veg_inference_LlamaEngine_nativeLoad(
         JNIEnv* env, jobject, jstring jPath, jint threads, jint contextTokens, jint batchSize) {
 
     const char* path = env->GetStringUTFChars(jPath, nullptr);
@@ -3110,7 +3112,7 @@ Java_com_jarvis_inference_LlamaEngine_nativeLoad(
 }
 
 JNIEXPORT void JNICALL
-Java_com_jarvis_inference_LlamaEngine_nativeFree(JNIEnv*, jobject, jlong handle) {
+Java_com_veg_inference_LlamaEngine_nativeFree(JNIEnv*, jobject, jlong handle) {
     Session* session = as_session(handle);
     if (session == nullptr) return;
     if (session->sampler) llama_sampler_free(session->sampler);
@@ -3120,7 +3122,7 @@ Java_com_jarvis_inference_LlamaEngine_nativeFree(JNIEnv*, jobject, jlong handle)
 }
 
 JNIEXPORT void JNICALL
-Java_com_jarvis_inference_LlamaEngine_nativeCancel(JNIEnv*, jobject, jlong handle) {
+Java_com_veg_inference_LlamaEngine_nativeCancel(JNIEnv*, jobject, jlong handle) {
     Session* session = as_session(handle);
     if (session != nullptr) session->cancelled.store(true);
 }
@@ -3132,7 +3134,7 @@ Java_com_jarvis_inference_LlamaEngine_nativeCancel(JNIEnv*, jobject, jlong handl
  * side must call this from a background dispatcher.
  */
 JNIEXPORT void JNICALL
-Java_com_jarvis_inference_LlamaEngine_nativeGenerate(
+Java_com_veg_inference_LlamaEngine_nativeGenerate(
         JNIEnv* env, jobject thiz, jlong handle, jstring jPrompt, jint maxTokens, jobject callback) {
 
     Session* session = as_session(handle);
@@ -3207,10 +3209,10 @@ Java_com_jarvis_inference_LlamaEngine_nativeGenerate(
 
 - [ ] **Step 5: Write the Kotlin side**
 
-Create `core-inference/src/main/kotlin/com/jarvis/inference/LlamaEngine.kt`:
+Create `core-inference/src/main/kotlin/com/veg/inference/LlamaEngine.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -3307,7 +3309,7 @@ class LlamaEngine : InferenceEngine {
     /** Qwen3 chat template. A mismatched template degrades output quality badly. */
     private fun buildPrompt(history: List<ChatTurn>, prompt: String): String = buildString {
         append("<|im_start|>system\n")
-        append("You are JARVIS, a concise and capable personal assistant running entirely on this device.")
+        append("You are Veg, a concise and capable personal assistant running entirely on this device.")
         append("<|im_end|>\n")
         for (turn in history) {
             append("<|im_start|>${turn.role}\n${turn.content}<|im_end|>\n")
@@ -3320,7 +3322,7 @@ class LlamaEngine : InferenceEngine {
         private const val MAX_GENERATED_TOKENS = 1024
 
         init {
-            System.loadLibrary("jarvis_llama")
+            System.loadLibrary("veg_llama")
         }
     }
 }
@@ -3332,16 +3334,16 @@ class LlamaEngine : InferenceEngine {
 ./gradlew :core-inference:assembleDebug
 ```
 
-Expected: `BUILD SUCCESSFUL`, and `core-inference/build/intermediates/cxx/Debug/*/obj/arm64-v8a/libjarvis_llama.so` exists.
+Expected: `BUILD SUCCESSFUL`, and `core-inference/build/intermediates/cxx/Debug/*/obj/arm64-v8a/libveg_llama.so` exists.
 
-If the build fails, the likely causes in order: OpenMP probing (confirm `GGML_OPENMP=OFF` reached CMake), a llama.cpp API change (confirm the submodule is at b4585), or NDK version mismatch (confirm 27.2.12479018 is installed).
+If the build fails, the likely causes in order: OpenMP probing (confirm `GGML_OPENMP=OFF` reached CMake), a llama.cpp API change (confirm the submodule is at b8148), or NDK version mismatch (confirm 27.2.12479018 is installed).
 
 - [ ] **Step 7: Write the instrumented test**
 
-This test requires a real model on the device and only runs when one is present. Create `core-inference/src/androidTest/kotlin/com/jarvis/inference/LlamaEngineInstrumentedTest.kt`:
+This test requires a real model on the device and only runs when one is present. Create `core-inference/src/androidTest/kotlin/com/veg/inference/LlamaEngineInstrumentedTest.kt`:
 
 ```kotlin
-package com.jarvis.inference
+package com.veg.inference
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -3403,10 +3405,10 @@ And inside `android { defaultConfig { } }`:
 Download `Qwen3-1.7B-Q4_K_M.gguf` on the desktop, then:
 
 ```bash
-adb shell mkdir -p /data/local/tmp/jarvis
-adb push Qwen3-1.7B-Q4_K_M.gguf /data/local/tmp/jarvis/
-adb shell run-as com.jarvis.inference.test mkdir -p files/models
-adb shell "cp /data/local/tmp/jarvis/Qwen3-1.7B-Q4_K_M.gguf /data/local/tmp/jarvis/model.gguf"
+adb shell mkdir -p /data/local/tmp/veg
+adb push Qwen3-1.7B-Q4_K_M.gguf /data/local/tmp/veg/
+adb shell run-as com.veg.inference.test mkdir -p files/models
+adb shell "cp /data/local/tmp/veg/Qwen3-1.7B-Q4_K_M.gguf /data/local/tmp/veg/model.gguf"
 ./gradlew :core-inference:connectedDebugAndroidTest
 ```
 
@@ -3435,14 +3437,14 @@ Kotlin side."
 
 **Files:**
 - Create: `ui-hud/build.gradle.kts`, `ui-hud/src/main/AndroidManifest.xml`
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/Theme.kt`
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/ReactorState.kt`
-- Test: `ui-hud/src/test/kotlin/com/jarvis/hud/ReactorStateTest.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/Theme.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/ReactorState.kt`
+- Test: `ui-hud/src/test/kotlin/com/veg/hud/ReactorStateTest.kt`
 
 **Interfaces:**
 - Consumes: `ThermalState` from Task 2
 - Produces:
-  - `object JarvisColors { val Ground, Panel, PanelHi, Hairline, HairlineLo, Text, Neutral, NeutralDim, Cool, CoolDeep, Warm, Amber, Red: Color }`
+  - `object VegColors { val Ground, Panel, PanelHi, Hairline, HairlineLo, Text, Neutral, NeutralDim, Cool, CoolDeep, Warm, Amber, Red: Color }`
   - `enum class ReactorMode { IDLE, THINKING, GENERATING, THERMAL, LOW_POWER }`
   - `data class ReactorState(mode: ReactorMode, tokensPerSecond: Float, thermalState: ThermalState, batteryPercent: Int, isCharging: Boolean)`
   - `fun ReactorState.spinScale(): Float`
@@ -3464,7 +3466,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.hud"
+    namespace = "com.veg.hud"
     compileSdk = 37
     defaultConfig {
         minSdk = 30
@@ -3521,12 +3523,12 @@ Create `ui-hud/src/main/AndroidManifest.xml`:
 
 - [ ] **Step 2: Write the failing test**
 
-Create `ui-hud/src/test/kotlin/com/jarvis/hud/ReactorStateTest.kt`:
+Create `ui-hud/src/test/kotlin/com/veg/hud/ReactorStateTest.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
-import com.jarvis.device.ThermalState
+import com.veg.device.ThermalState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -3640,10 +3642,10 @@ Expected: FAIL — `Unresolved reference: ReactorMode`.
 
 - [ ] **Step 4: Write the theme**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/Theme.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/Theme.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -3661,7 +3663,7 @@ import androidx.compose.ui.unit.sp
  * Single dark theme by intent: this is an instrument panel, and a light variant
  * would undermine the whole read. No isSystemInDarkTheme branching anywhere.
  */
-object JarvisColors {
+object VegColors {
     val Ground = Color(0xFF06080B)
     val Panel = Color(0xFF0C1117)
     val PanelHi = Color(0xFF121A22)
@@ -3677,15 +3679,15 @@ object JarvisColors {
     val Red = Color(0xFFE8604C)
 }
 
-private val JarvisScheme = darkColorScheme(
-    primary = JarvisColors.Cool,
-    onPrimary = JarvisColors.Ground,
-    secondary = JarvisColors.Warm,
-    background = JarvisColors.Ground,
-    onBackground = JarvisColors.Text,
-    surface = JarvisColors.Panel,
-    onSurface = JarvisColors.Text,
-    error = JarvisColors.Red
+private val VegScheme = darkColorScheme(
+    primary = VegColors.Cool,
+    onPrimary = VegColors.Ground,
+    secondary = VegColors.Warm,
+    background = VegColors.Ground,
+    onBackground = VegColors.Text,
+    surface = VegColors.Panel,
+    onSurface = VegColors.Text,
+    error = VegColors.Red
 )
 
 val MonoStyle = TextStyle(
@@ -3694,16 +3696,16 @@ val MonoStyle = TextStyle(
     letterSpacing = 1.6.sp
 )
 
-private val JarvisTypography = Typography(
-    bodyMedium = TextStyle(fontSize = 14.sp, color = JarvisColors.Text),
+private val VegTypography = Typography(
+    bodyMedium = TextStyle(fontSize = 14.sp, color = VegColors.Text),
     labelSmall = MonoStyle.copy(fontWeight = FontWeight.Medium)
 )
 
 @Composable
-fun JarvisTheme(content: @Composable () -> Unit) {
+fun VegTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = JarvisScheme,
-        typography = JarvisTypography,
+        colorScheme = VegScheme,
+        typography = VegTypography,
         content = content
     )
 }
@@ -3711,12 +3713,12 @@ fun JarvisTheme(content: @Composable () -> Unit) {
 
 - [ ] **Step 5: Write the reactor state**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/ReactorState.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/ReactorState.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
-import com.jarvis.device.ThermalState
+import com.veg.device.ThermalState
 
 enum class ReactorMode { IDLE, THINKING, GENERATING, THERMAL, LOW_POWER }
 
@@ -3813,12 +3815,12 @@ interval is derived from measured tok/s so a stalled model visibly stalls."
 The Canvas port of the approved design: eight counter-rotating ring assemblies, tick bands, radial spokes, data blocks, hot nodes, and a core reticle.
 
 **Files:**
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/ReactorGeometry.kt`
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/Reactor.kt`
-- Test: `ui-hud/src/test/kotlin/com/jarvis/hud/ReactorGeometryTest.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/ReactorGeometry.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/Reactor.kt`
+- Test: `ui-hud/src/test/kotlin/com/veg/hud/ReactorGeometryTest.kt`
 
 **Interfaces:**
-- Consumes: `ReactorState`, `JarvisColors` from Task 9
+- Consumes: `ReactorState`, `VegColors` from Task 9
 - Produces:
   - `data class RingDef(radiusFraction: Float, speed: Float, segments: Int, gapFraction: Float, strokeWidth: Float, hot: Boolean)`
   - `object ReactorGeometry { val RINGS: List<RingDef>; val TICK_BANDS: List<TickBand>; fun arcsFor(ring: RingDef): List<ClosedFloatingPointRange<Float>>; fun activePulses(nowMillis: Long, intervalMillis: Long, lifetimeMillis: Long): List<Float> }`
@@ -3826,10 +3828,10 @@ The Canvas port of the approved design: eight counter-rotating ring assemblies, 
 
 - [ ] **Step 1: Write the failing geometry test**
 
-Create `ui-hud/src/test/kotlin/com/jarvis/hud/ReactorGeometryTest.kt`:
+Create `ui-hud/src/test/kotlin/com/veg/hud/ReactorGeometryTest.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -3911,10 +3913,10 @@ Expected: FAIL — `Unresolved reference: ReactorGeometry`.
 
 - [ ] **Step 3: Write the geometry**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/ReactorGeometry.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/ReactorGeometry.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 data class RingDef(
     val radiusFraction: Float,
@@ -4003,10 +4005,10 @@ Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Write the renderer**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/Reactor.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/Reactor.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -4055,8 +4057,8 @@ fun Reactor(state: ReactorState, modifier: Modifier = Modifier) {
     )
 
     val warm = state.isWarmPalette()
-    val primary = if (warm) JarvisColors.Warm else JarvisColors.Cool
-    val accent = if (warm) JarvisColors.Amber else JarvisColors.Warm
+    val primary = if (warm) VegColors.Warm else VegColors.Cool
+    val accent = if (warm) VegColors.Amber else VegColors.Warm
     val dim = state.dimFactor()
     val spin = state.spinScale()
 
@@ -4255,12 +4257,12 @@ animation correct when frames drop under inference load."
 Telemetry lives in small corner chips, not a full-width bar. This was an explicit design decision: the bar competed with the reactor for attention.
 
 **Files:**
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/TelemetryChips.kt`
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/ChatScreen.kt`
-- Test: `ui-hud/src/androidTest/kotlin/com/jarvis/hud/ChatScreenTest.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/TelemetryChips.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/ChatScreen.kt`
+- Test: `ui-hud/src/androidTest/kotlin/com/veg/hud/ChatScreenTest.kt`
 
 **Interfaces:**
-- Consumes: `ReactorState`, `JarvisColors`, `Reactor` from Tasks 9-10; `Message` from Task 4
+- Consumes: `ReactorState`, `VegColors`, `Reactor` from Tasks 9-10; `Message` from Task 4
 - Produces:
   - `data class ChipData(label: String, highlight: ChipHighlight)`
   - `enum class ChipHighlight { NONE, ACTIVE, WARN }`
@@ -4270,12 +4272,12 @@ Telemetry lives in small corner chips, not a full-width bar. This was an explici
 
 - [ ] **Step 1: Write the failing chip test**
 
-Create `ui-hud/src/test/kotlin/com/jarvis/hud/TelemetryChipsTest.kt`:
+Create `ui-hud/src/test/kotlin/com/veg/hud/TelemetryChipsTest.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
-import com.jarvis.device.ThermalState
+import com.veg.device.ThermalState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -4332,10 +4334,10 @@ Expected: FAIL — `Unresolved reference: chipsFor`.
 
 - [ ] **Step 3: Write the chips**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/TelemetryChips.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/TelemetryChips.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -4354,7 +4356,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.jarvis.device.ThermalState
+import com.veg.device.ThermalState
 
 enum class ChipHighlight { NONE, ACTIVE, WARN }
 
@@ -4399,17 +4401,17 @@ fun TelemetryChips(chips: List<ChipData>, modifier: Modifier = Modifier) {
     ) {
         for (chip in chips) {
             val color = when (chip.highlight) {
-                ChipHighlight.NONE -> JarvisColors.Neutral
-                ChipHighlight.ACTIVE -> JarvisColors.Cool
-                ChipHighlight.WARN -> JarvisColors.Amber
+                ChipHighlight.NONE -> VegColors.Neutral
+                ChipHighlight.ACTIVE -> VegColors.Cool
+                ChipHighlight.WARN -> VegColors.Amber
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(JarvisColors.Panel.copy(alpha = 0.72f))
-                    .border(1.dp, JarvisColors.HairlineLo, CircleShape)
+                    .background(VegColors.Panel.copy(alpha = 0.72f))
+                    .border(1.dp, VegColors.HairlineLo, CircleShape)
                     .padding(horizontal = 8.dp, vertical = 2.dp)
                     .semantics { contentDescription = chip.label }
             ) {
@@ -4425,10 +4427,10 @@ fun TelemetryChips(chips: List<ChipData>, modifier: Modifier = Modifier) {
 
 - [ ] **Step 4: Write the chat screen**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/ChatScreen.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/ChatScreen.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -4460,7 +4462,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jarvis.data.Message
+import com.veg.data.Message
 
 @Composable
 fun ChatScreen(
@@ -4483,7 +4485,7 @@ fun ChatScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(JarvisColors.Ground)
+            .background(VegColors.Ground)
     ) {
         Column(Modifier.fillMaxSize()) {
 
@@ -4496,7 +4498,7 @@ fun ChatScreen(
                 Text(
                     text = captionFor(state),
                     style = MonoStyle,
-                    color = JarvisColors.NeutralDim,
+                    color = VegColors.NeutralDim,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -4508,7 +4510,7 @@ fun ChatScreen(
                 Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(JarvisColors.HairlineLo)
+                    .background(VegColors.HairlineLo)
             )
 
             LazyColumn(
@@ -4565,20 +4567,20 @@ private fun MessageRow(role: String, content: String) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Text(
                 text = content,
-                color = JarvisColors.Text,
+                color = VegColors.Text,
                 fontSize = 13.sp,
                 modifier = Modifier
-                    .background(JarvisColors.PanelHi, RoundedCornerShape(12.dp, 12.dp, 3.dp, 12.dp))
-                    .border(1.dp, JarvisColors.Hairline, RoundedCornerShape(12.dp, 12.dp, 3.dp, 12.dp))
+                    .background(VegColors.PanelHi, RoundedCornerShape(12.dp, 12.dp, 3.dp, 12.dp))
+                    .border(1.dp, VegColors.Hairline, RoundedCornerShape(12.dp, 12.dp, 3.dp, 12.dp))
                     .padding(horizontal = 12.dp, vertical = 9.dp)
             )
         }
     } else {
         Column(Modifier.fillMaxWidth()) {
-            Text("JARVIS", style = MonoStyle, color = JarvisColors.CoolDeep)
+            Text("Veg", style = MonoStyle, color = VegColors.CoolDeep)
             Text(
                 text = content,
-                color = JarvisColors.Text,
+                color = VegColors.Text,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(start = 12.dp, top = 4.dp)
             )
@@ -4598,27 +4600,27 @@ private fun Composer(draft: String, onDraftChange: (String) -> Unit, onSend: () 
         Box(
             Modifier
                 .weight(1f)
-                .background(JarvisColors.Panel, RoundedCornerShape(999.dp))
-                .border(1.dp, JarvisColors.Hairline, RoundedCornerShape(999.dp))
+                .background(VegColors.Panel, RoundedCornerShape(999.dp))
+                .border(1.dp, VegColors.Hairline, RoundedCornerShape(999.dp))
                 .padding(horizontal = 14.dp, vertical = 9.dp)
         ) {
             if (draft.isEmpty()) {
-                Text("Message", color = JarvisColors.NeutralDim, fontSize = 13.sp)
+                Text("Message", color = VegColors.NeutralDim, fontSize = 13.sp)
             }
             BasicTextField(
                 value = draft,
                 onValueChange = onDraftChange,
-                textStyle = TextStyle(color = JarvisColors.Text, fontSize = 13.sp),
-                cursorBrush = SolidColor(JarvisColors.Cool),
+                textStyle = TextStyle(color = VegColors.Text, fontSize = 13.sp),
+                cursorBrush = SolidColor(VegColors.Cool),
                 modifier = Modifier.fillMaxWidth()
             )
         }
         Text(
             text = "SEND",
             style = MonoStyle,
-            color = JarvisColors.Cool,
+            color = VegColors.Cool,
             modifier = Modifier
-                .border(1.dp, JarvisColors.CoolDeep, RoundedCornerShape(999.dp))
+                .border(1.dp, VegColors.CoolDeep, RoundedCornerShape(999.dp))
                 .clickable { onSend() }
                 .padding(horizontal = 12.dp, vertical = 9.dp)
         )
@@ -4628,10 +4630,10 @@ private fun Composer(draft: String, onDraftChange: (String) -> Unit, onSend: () 
 
 - [ ] **Step 5: Write the instrumented UI test**
 
-Create `ui-hud/src/androidTest/kotlin/com/jarvis/hud/ChatScreenTest.kt`:
+Create `ui-hud/src/androidTest/kotlin/com/veg/hud/ChatScreenTest.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -4639,8 +4641,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.onNodeWithContentDescription
-import com.jarvis.data.Message
-import com.jarvis.device.ThermalState
+import com.veg.data.Message
+import com.veg.device.ThermalState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -4660,7 +4662,7 @@ class ChatScreenTest {
     @Test
     fun rendersExistingMessages() {
         compose.setContent {
-            JarvisTheme {
+            VegTheme {
                 ChatScreen(
                     state = idle,
                     messages = listOf(
@@ -4681,7 +4683,7 @@ class ChatScreenTest {
     @Test
     fun showsStreamingTextWhileGenerating() {
         compose.setContent {
-            JarvisTheme {
+            VegTheme {
                 ChatScreen(
                     state = idle.copy(mode = ReactorMode.GENERATING, tokensPerSecond = 10f),
                     messages = emptyList(),
@@ -4700,7 +4702,7 @@ class ChatScreenTest {
         var sent: String? = null
 
         compose.setContent {
-            JarvisTheme {
+            VegTheme {
                 ChatScreen(
                     state = idle,
                     messages = emptyList(),
@@ -4720,7 +4722,7 @@ class ChatScreenTest {
     @Test
     fun thermalStateSurfacesAsAWarningChip() {
         compose.setContent {
-            JarvisTheme {
+            VegTheme {
                 ChatScreen(
                     state = idle.copy(mode = ReactorMode.THERMAL, thermalState = ThermalState.SEVERE),
                     messages = emptyList(),
@@ -4762,35 +4764,35 @@ renders as a pending row so tokens appear as they arrive."
 ### Task 12: ui-hud — boot screen and view model
 
 **Files:**
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/BootScreen.kt`
-- Create: `ui-hud/src/main/kotlin/com/jarvis/hud/ChatViewModel.kt`
-- Test: `ui-hud/src/test/kotlin/com/jarvis/hud/ChatViewModelTest.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/BootScreen.kt`
+- Create: `ui-hud/src/main/kotlin/com/veg/hud/ChatViewModel.kt`
+- Test: `ui-hud/src/test/kotlin/com/veg/hud/ChatViewModelTest.kt`
 
 **Interfaces:**
-- Consumes: `ModelRecommender`, `AndroidDeviceProbe`, `RuntimeTuner`, `ModelDownloader`, `InferenceEngine`, `JarvisDatabase`
+- Consumes: `ModelRecommender`, `AndroidDeviceProbe`, `RuntimeTuner`, `ModelDownloader`, `InferenceEngine`, `VegDatabase`
 - Produces:
   - `data class ChatUiState(reactor: ReactorState, messages: List<Message>, streamingText: String, residentGb: Float, isReady: Boolean)`
-  - `class ChatViewModel(engine: InferenceEngine, db: JarvisDatabase, tuner: RuntimeTuner, readings: () -> DeviceReadings) : ViewModel { val uiState: StateFlow<ChatUiState>; fun send(text: String); fun stop() }`
+  - `class ChatViewModel(engine: InferenceEngine, db: VegDatabase, tuner: RuntimeTuner, readings: () -> DeviceReadings) : ViewModel { val uiState: StateFlow<ChatUiState>; fun send(text: String); fun stop() }`
   - `@Composable fun BootScreen(readings: DeviceReadings, recommendation: Recommendation, progress: DownloadProgress?, onStart: (ModelCandidate) -> Unit)`
 
 - [ ] **Step 1: Write the failing view model test**
 
-Create `ui-hud/src/test/kotlin/com/jarvis/hud/ChatViewModelTest.kt`:
+Create `ui-hud/src/test/kotlin/com/veg/hud/ChatViewModelTest.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
-import com.jarvis.data.JarvisDatabase
-import com.jarvis.data.Message
-import com.jarvis.device.DeviceReadings
-import com.jarvis.device.RuntimeTuner
-import com.jarvis.inference.FakeEngine
-import com.jarvis.inference.InferenceConfig
+import com.veg.data.VegDatabase
+import com.veg.data.Message
+import com.veg.device.DeviceReadings
+import com.veg.device.RuntimeTuner
+import com.veg.inference.FakeEngine
+import com.veg.inference.InferenceConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -4813,7 +4815,7 @@ import java.io.File
 class ChatViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
-    private lateinit var db: JarvisDatabase
+    private lateinit var db: VegDatabase
 
     private fun readings() = DeviceReadings(
         totalRamBytes = 12L * 1024 * 1024 * 1024,
@@ -4832,7 +4834,7 @@ class ChatViewModelTest {
         Dispatchers.setMain(dispatcher)
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            JarvisDatabase::class.java
+            VegDatabase::class.java
         )
             .allowMainThreadQueries()
             .addCallback(object : RoomDatabase.Callback() {
@@ -4920,21 +4922,21 @@ Expected: FAIL — `Unresolved reference: ChatViewModel`.
 
 - [ ] **Step 3: Write the view model**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/ChatViewModel.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/ChatViewModel.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jarvis.data.Conversation
-import com.jarvis.data.JarvisDatabase
-import com.jarvis.data.Message
-import com.jarvis.device.DeviceReadings
-import com.jarvis.device.RuntimeTuner
-import com.jarvis.inference.ChatTurn
-import com.jarvis.inference.InferenceEngine
-import com.jarvis.inference.Token
+import com.veg.data.Conversation
+import com.veg.data.VegDatabase
+import com.veg.data.Message
+import com.veg.device.DeviceReadings
+import com.veg.device.RuntimeTuner
+import com.veg.inference.ChatTurn
+import com.veg.inference.InferenceEngine
+import com.veg.inference.Token
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -4958,7 +4960,7 @@ data class ChatUiState(
  */
 class ChatViewModel(
     private val engine: InferenceEngine,
-    private val db: JarvisDatabase,
+    private val db: VegDatabase,
     private val tuner: RuntimeTuner,
     private val readings: () -> DeviceReadings
 ) : ViewModel() {
@@ -5088,10 +5090,10 @@ class ChatViewModel(
 
 - [ ] **Step 4: Write the boot screen**
 
-Create `ui-hud/src/main/kotlin/com/jarvis/hud/BootScreen.kt`:
+Create `ui-hud/src/main/kotlin/com/veg/hud/BootScreen.kt`:
 
 ```kotlin
-package com.jarvis.hud
+package com.veg.hud
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -5109,10 +5111,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jarvis.device.DeviceReadings
-import com.jarvis.device.ModelCandidate
-import com.jarvis.device.Recommendation
-import com.jarvis.model.DownloadProgress
+import com.veg.device.DeviceReadings
+import com.veg.device.ModelCandidate
+import com.veg.device.Recommendation
+import com.veg.model.DownloadProgress
 
 private const val GB = 1024f * 1024f * 1024f
 
@@ -5127,11 +5129,11 @@ fun BootScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(JarvisColors.Ground)
+            .background(VegColors.Ground)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text("SYSTEM SCAN", style = MonoStyle, color = JarvisColors.CoolDeep)
+        Text("SYSTEM SCAN", style = MonoStyle, color = VegColors.CoolDeep)
         Box(Modifier.height(12.dp))
 
         ScanRow("Device", readings.socModel)
@@ -5146,7 +5148,7 @@ fun BootScreen(
         if (best == null) {
             Text(
                 text = recommendation.reasons.firstOrNull() ?: "No model fits this device.",
-                color = JarvisColors.Red,
+                color = VegColors.Red,
                 fontSize = 13.sp
             )
             return@Column
@@ -5155,18 +5157,18 @@ fun BootScreen(
         Column(
             Modifier
                 .fillMaxWidth()
-                .border(1.dp, JarvisColors.CoolDeep)
+                .border(1.dp, VegColors.CoolDeep)
                 .padding(13.dp)
         ) {
-            Text("RECOMMENDED", style = MonoStyle, color = JarvisColors.CoolDeep)
-            Text(best.displayName, color = JarvisColors.Text, fontSize = 17.sp)
+            Text("RECOMMENDED", style = MonoStyle, color = VegColors.CoolDeep)
+            Text(best.displayName, color = VegColors.Text, fontSize = 17.sp)
             Text(
                 text = "${gb(best.fileBytes)} GB · ~${best.expectedTokensPerSecond.toInt()} tok/s",
-                color = JarvisColors.Neutral,
+                color = VegColors.Neutral,
                 fontSize = 11.sp
             )
             for (reason in recommendation.reasons) {
-                Text(reason, color = JarvisColors.NeutralDim, fontSize = 10.sp)
+                Text(reason, color = VegColors.NeutralDim, fontSize = 10.sp)
             }
         }
 
@@ -5180,10 +5182,10 @@ fun BootScreen(
                     .padding(vertical = 3.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(alternative.displayName, color = JarvisColors.NeutralDim, fontSize = 11.sp)
+                Text(alternative.displayName, color = VegColors.NeutralDim, fontSize = 11.sp)
                 Text(
                     "${gb(alternative.fileBytes)} GB · ~${alternative.expectedTokensPerSecond.toInt()} tok/s",
-                    color = JarvisColors.NeutralDim,
+                    color = VegColors.NeutralDim,
                     fontSize = 11.sp
                 )
             }
@@ -5195,9 +5197,9 @@ fun BootScreen(
             null -> Text(
                 text = "BEGIN",
                 style = MonoStyle,
-                color = JarvisColors.Cool,
+                color = VegColors.Cool,
                 modifier = Modifier
-                    .border(1.dp, JarvisColors.CoolDeep)
+                    .border(1.dp, VegColors.CoolDeep)
                     .clickable { onStart(best) }
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             )
@@ -5210,37 +5212,37 @@ fun BootScreen(
                     Modifier
                         .fillMaxWidth()
                         .height(3.dp)
-                        .background(JarvisColors.Hairline)
+                        .background(VegColors.Hairline)
                 ) {
                     Box(
                         Modifier
                             .fillMaxWidth(fraction)
                             .height(3.dp)
-                            .background(JarvisColors.Cool)
+                            .background(VegColors.Cool)
                     )
                 }
                 Text(
                     "Downloading · ${gb(progress.bytesDownloaded)} / ${gb(progress.totalBytes)} GB",
                     style = MonoStyle,
-                    color = JarvisColors.NeutralDim
+                    color = VegColors.NeutralDim
                 )
             }
 
             DownloadProgress.Verifying ->
-                Text("Verifying checksum", style = MonoStyle, color = JarvisColors.Cool)
+                Text("Verifying checksum", style = MonoStyle, color = VegColors.Cool)
 
             is DownloadProgress.Done ->
-                Text("Ready", style = MonoStyle, color = JarvisColors.Cool)
+                Text("Ready", style = MonoStyle, color = VegColors.Cool)
 
             is DownloadProgress.Failed -> Column {
-                Text(progress.reason, color = JarvisColors.Red, fontSize = 12.sp)
+                Text(progress.reason, color = VegColors.Red, fontSize = 12.sp)
                 if (progress.canRetry) {
                     Text(
                         text = "RETRY",
                         style = MonoStyle,
-                        color = JarvisColors.Cool,
+                        color = VegColors.Cool,
                         modifier = Modifier
-                            .border(1.dp, JarvisColors.CoolDeep)
+                            .border(1.dp, VegColors.CoolDeep)
                             .clickable { onStart(best) }
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     )
@@ -5253,8 +5255,8 @@ fun BootScreen(
 @Composable
 private fun ScanRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MonoStyle, color = JarvisColors.Neutral)
-        Text(value, style = MonoStyle, color = JarvisColors.Text)
+        Text(label, style = MonoStyle, color = VegColors.Neutral)
+        Text(value, style = MonoStyle, color = VegColors.Text)
     }
 }
 
@@ -5287,15 +5289,15 @@ and keeps alternatives selectable."
 
 **Files:**
 - Modify: `app/build.gradle.kts` — add module dependencies
-- Modify: `app/src/main/java/com/jarvis/mobile/MainActivity.kt` — replace the placeholder
-- Create: `app/src/main/java/com/jarvis/mobile/AppContainer.kt`
-- Create: `app/src/main/java/com/jarvis/mobile/AppRoot.kt`
-- Test: `app/src/test/kotlin/com/jarvis/mobile/AppContainerTest.kt`
+- Modify: `app/src/main/java/com/veg/assistant/MainActivity.kt` — replace the placeholder
+- Create: `app/src/main/java/com/veg/assistant/AppContainer.kt`
+- Create: `app/src/main/java/com/veg/assistant/AppRoot.kt`
+- Test: `app/src/test/kotlin/com/veg/assistant/AppContainerTest.kt`
 
 **Interfaces:**
 - Consumes: everything from Tasks 1-12
 - Produces:
-  - `class AppContainer(context: Context) { val probe: AndroidDeviceProbe; val recommender: ModelRecommender; val tuner: RuntimeTuner; val db: JarvisDatabase; val modelRepository: ModelRepository; val downloader: ModelDownloader; val engine: InferenceEngine; val modelsDir: File }`
+  - `class AppContainer(context: Context) { val probe: AndroidDeviceProbe; val recommender: ModelRecommender; val tuner: RuntimeTuner; val db: VegDatabase; val modelRepository: ModelRepository; val downloader: ModelDownloader; val engine: InferenceEngine; val modelsDir: File }`
   - `sealed interface AppScreen { data object Boot : AppScreen; data class Chat(modelId: String) : AppScreen }`
   - `@Composable fun AppRoot(container: AppContainer)`
 
@@ -5337,10 +5339,10 @@ Also add to the `android { }` block:
 
 - [ ] **Step 2: Write the failing container test**
 
-Create `app/src/test/kotlin/com/jarvis/mobile/AppContainerTest.kt`:
+Create `app/src/test/kotlin/com/veg/assistant/AppContainerTest.kt`:
 
 ```kotlin
-package com.jarvis.mobile
+package com.veg.assistant
 
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertNotNull
@@ -5398,20 +5400,20 @@ Expected: FAIL — `Unresolved reference: AppContainer`.
 
 - [ ] **Step 4: Write the container**
 
-Create `app/src/main/java/com/jarvis/mobile/AppContainer.kt`:
+Create `app/src/main/java/com/veg/assistant/AppContainer.kt`:
 
 ```kotlin
-package com.jarvis.mobile
+package com.veg.assistant
 
 import android.content.Context
-import com.jarvis.data.JarvisDatabase
-import com.jarvis.device.ModelRecommender
-import com.jarvis.device.RuntimeTuner
-import com.jarvis.device.android.AndroidDeviceProbe
-import com.jarvis.inference.InferenceEngine
-import com.jarvis.inference.LlamaEngine
-import com.jarvis.model.ModelDownloader
-import com.jarvis.model.ModelRepository
+import com.veg.data.VegDatabase
+import com.veg.device.ModelRecommender
+import com.veg.device.RuntimeTuner
+import com.veg.device.android.AndroidDeviceProbe
+import com.veg.inference.InferenceEngine
+import com.veg.inference.LlamaEngine
+import com.veg.model.ModelDownloader
+import com.veg.model.ModelRepository
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -5432,7 +5434,7 @@ class AppContainer(context: Context) {
     val recommender = ModelRecommender()
     val tuner = RuntimeTuner()
 
-    val db: JarvisDatabase = JarvisDatabase.open(appContext)
+    val db: VegDatabase = VegDatabase.open(appContext)
 
     val modelRepository = ModelRepository(modelsDir)
 
@@ -5452,10 +5454,10 @@ class AppContainer(context: Context) {
 
 - [ ] **Step 5: Write the root composable**
 
-Create `app/src/main/java/com/jarvis/mobile/AppRoot.kt`:
+Create `app/src/main/java/com/veg/assistant/AppRoot.kt`:
 
 ```kotlin
-package com.jarvis.mobile
+package com.veg.assistant
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -5465,13 +5467,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.jarvis.device.ModelCandidate
-import com.jarvis.hud.BootScreen
-import com.jarvis.hud.ChatScreen
-import com.jarvis.hud.ChatViewModel
-import com.jarvis.inference.toInferenceConfig
-import com.jarvis.model.DownloadProgress
-import com.jarvis.model.ModelRegistry
+import com.veg.device.ModelCandidate
+import com.veg.hud.BootScreen
+import com.veg.hud.ChatScreen
+import com.veg.hud.ChatViewModel
+import com.veg.inference.toInferenceConfig
+import com.veg.model.DownloadProgress
+import com.veg.model.ModelRegistry
 import kotlinx.coroutines.launch
 
 sealed interface AppScreen {
@@ -5548,7 +5550,7 @@ fun AppRoot(container: AppContainer) {
 }
 
 private fun residentGbFor(modelId: String): Float =
-    com.jarvis.device.ModelCatalog.ALL
+    com.veg.device.ModelCatalog.ALL
         .firstOrNull { it.id == modelId }
         ?.let { it.residentBytes / (1024f * 1024f * 1024f) }
         ?: 0f
@@ -5574,16 +5576,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 - [ ] **Step 6: Replace MainActivity**
 
-Replace `app/src/main/java/com/jarvis/mobile/MainActivity.kt` with:
+Replace `app/src/main/java/com/veg/assistant/MainActivity.kt` with:
 
 ```kotlin
-package com.jarvis.mobile
+package com.veg.assistant
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.jarvis.hud.JarvisTheme
+import com.veg.hud.VegTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -5594,7 +5596,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         container = AppContainer(this)
         setContent {
-            JarvisTheme {
+            VegTheme {
                 AppRoot(container)
             }
         }
@@ -5641,8 +5643,8 @@ allocation that outlives its screen invites process death."
 Note: the placeholder text says Task 12 because it was written before this task was renumbered; the string value itself is what matters, not the number in it.
 
 **Files:**
-- Modify: `core-model/src/main/kotlin/com/jarvis/model/ModelSpec.kt`
-- Test: `core-model/src/test/kotlin/com/jarvis/model/ModelRegistryTest.kt`
+- Modify: `core-model/src/main/kotlin/com/veg/model/ModelSpec.kt`
+- Test: `core-model/src/test/kotlin/com/veg/model/ModelRegistryTest.kt`
 
 **Interfaces:**
 - Consumes: `ModelRegistry` from Task 6
@@ -5650,12 +5652,12 @@ Note: the placeholder text says Task 12 because it was written before this task 
 
 - [ ] **Step 1: Write the failing test**
 
-Create `core-model/src/test/kotlin/com/jarvis/model/ModelRegistryTest.kt`:
+Create `core-model/src/test/kotlin/com/veg/model/ModelRegistryTest.kt`:
 
 ```kotlin
-package com.jarvis.model
+package com.veg.model
 
-import com.jarvis.device.ModelCatalog
+import com.veg.device.ModelCatalog
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -5739,7 +5741,7 @@ If a URL 404s, the repository layout has changed. Open the model's Hugging Face 
 
 - [ ] **Step 4: Replace the placeholders**
 
-In `core-model/src/main/kotlin/com/jarvis/model/ModelSpec.kt`, replace each `sha256 = "PIN_IN_TASK_12"` with the value from `sha256sum`, and each `sizeBytes` with the value from `stat`. Then delete the stale comment above `SPECS` that says the checksums are placeholders, and replace it with:
+In `core-model/src/main/kotlin/com/veg/model/ModelSpec.kt`, replace each `sha256 = "PIN_IN_TASK_12"` with the value from `sha256sum`, and each `sizeBytes` with the value from `stat`. Then delete the stale comment above `SPECS` that says the checksums are placeholders, and replace it with:
 
 ```kotlin
 /**
@@ -5778,8 +5780,8 @@ The spec requires measuring what no emulator reports honestly, then calibrating 
 
 **Files:**
 - Create: `docs/superpowers/measurements/2026-08-20-oneplus-13r.md`
-- Modify: `core-device/src/main/kotlin/com/jarvis/device/ModelRecommender.kt` (only if measurements disagree with predictions)
-- Modify: `core-device/src/test/kotlin/com/jarvis/device/ModelRecommenderTest.kt` (only if thresholds change)
+- Modify: `core-device/src/main/kotlin/com/veg/device/ModelRecommender.kt` (only if measurements disagree with predictions)
+- Modify: `core-device/src/test/kotlin/com/veg/device/ModelRecommenderTest.kt` (only if thresholds change)
 
 **Interfaces:**
 - Consumes: the complete app from Tasks 1-14
@@ -5800,13 +5802,13 @@ Launch the app, complete the download, then with logcat running:
 
 ```bash
 adb logcat -c
-adb logcat -s JarvisLlama
+adb logcat -s VegLlama
 ```
 
 Record: time from launch to boot screen, download duration, model load duration, and RAM after load:
 
 ```bash
-adb shell dumpsys meminfo com.jarvis.mobile | head -20
+adb shell dumpsys meminfo com.veg.assistant | head -20
 ```
 
 - [ ] **Step 3: Measure sustained throughput and thermal behaviour**

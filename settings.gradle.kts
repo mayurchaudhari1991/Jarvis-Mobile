@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "JarvisMobile"
+rootProject.name = "Vega"
 include(
     ":app",
     ":core-device",
@@ -21,5 +21,6 @@ include(
     ":core-model",
     ":core-inference",
     ":core-data",
-    ":ui-hud"
+    ":ui-hud",
+    ":feature-automation"
 )

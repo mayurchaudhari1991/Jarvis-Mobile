@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.jarvis.data"
+    namespace = "com.veg.data"
     compileSdk = 37
     defaultConfig { minSdk = 30 }
     compileOptions {
@@ -23,8 +23,12 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
+    // api, not implementation: downstream modules (ui-hud) hold a VegDatabase
+    // reference directly, which requires androidx.room.RoomDatabase (its
+    // supertype) and Room's annotations to be visible on their compile
+    // classpath too.
+    api(libs.room.runtime)
+    api(libs.room.ktx)
     implementation(libs.coroutines.core)
     ksp(libs.room.compiler)
 

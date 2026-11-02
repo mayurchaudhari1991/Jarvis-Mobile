@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  android:packageNames scopes this service to exactly Facebook and Instagram.
+  Without it, an accessibility service receives events from every app on the
+  device — this line is what keeps Vega's automation feature from seeing
+  anything outside those two apps, which materially narrows the privacy
+  surface for an app whose whole pitch is "nothing leaves the device." Do not
+  remove it to "support more apps later" without deliberately re-deciding
+  this tradeoff.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagReportViewIds"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="100"
+    android:packageNames="com.facebook.katana,com.instagram.android"
+    android:description="@string/veg_automation_description" />

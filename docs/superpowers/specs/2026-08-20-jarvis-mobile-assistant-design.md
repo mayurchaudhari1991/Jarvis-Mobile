@@ -1,13 +1,13 @@
-# JARVIS Mobile — Design Spec
+# Veg Mobile — Design Spec
 
 **Date:** 2026-08-20
 **Status:** Approved for phase 1 implementation
 **Target device:** OnePlus 13R (Snapdragon 8 Gen 3, 12 GB RAM)
-**minSdk 30 (Android 11), targetSdk 35 (Android 15).** minSdk 30 is set by `PowerManager.getThermalHeadroom`, which the runtime adaptation in section 6 depends on. Devices below API 30 are not supported.
+**minSdk 30 (Android 11), targetSdk 37 (Android 16).** minSdk 30 is set by `PowerManager.getThermalHeadroom`, which the runtime adaptation in section 6 depends on. Devices below API 30 are not supported.
 
 ## 1. Purpose
 
-A fully offline personal assistant for Android, running a large language model on the device itself. No accounts, no API keys, no servers, no network access except a one-time model download. The interface is a JARVIS-style HUD whose visual state reflects real system telemetry rather than decoration.
+A fully offline personal assistant for Android, running a large language model on the device itself. No accounts, no API keys, no servers, no network access except a one-time model download. The interface is a reactor HUD whose visual state reflects real system telemetry rather than decoration.
 
 The app must be free to build and free to run, permanently. No component may depend on a third-party free tier, a hosted backend, or a subscription.
 
@@ -60,7 +60,7 @@ Five Gradle modules, each independently testable:
 | `core-model` | Download, resume, verify, and store GGUF files | `core-device` |
 | `core-inference` | llama.cpp via JNI; expose streaming tokens | `core-model` |
 | `core-data` | Room database; encrypted export and import | nothing |
-| `ui-hud` | The JARVIS interface | all above |
+| `ui-hud` | The reactor HUD and chat interface | all above |
 
 Key boundaries:
 
@@ -79,7 +79,7 @@ The app derives its model recommendation from the device rather than hardcoding 
 ### Readable signals (no permissions required)
 
 - Total and available RAM (`ActivityManager.MemoryInfo`) — availability matters more than total, since it determines whether a load succeeds
-- Per-app memory limit (`getMemoryClass`, `getLargeMemoryClass`) — often far below total RAM and the true ceiling
+- Per-app memory limit (`getMemoryClass`, `getLargeMemoryClass`) — read for telemetry but NOT used to gate model choice. It caps the Java heap; llama.cpp mmaps weights into native memory, which is not subject to it. Measured on device: the app's native heap reached 10.5 GB against a 512 MB largeMemoryClass.
 - Free storage (`StatFs`)
 - CPU core count and SoC identifier
 - Battery level and charging state (`BatteryManager`)
@@ -91,7 +91,7 @@ Precise GPU/NPU capability and battery wear are not exposed consistently across 
 
 ### Two separate decisions
 
-**At first launch — which model to download.** Score the device on available RAM, per-app memory limit, free storage, and SoC tier. Rank candidate models and present the top one as a recommendation with visible reasoning. Alternatives remain selectable with honest tradeoffs stated. The recommendation never silently locks the user in.
+**At first launch — which model to download.** Score the device on available RAM and free storage. Rank candidate models and present the top one as a recommendation with visible reasoning. Alternatives remain selectable with honest tradeoffs stated. The recommendation never silently locks the user in.
 
 **During use — runtime adaptation.** Thermal headroom and battery state tune thread count, context window, and batch size. They never trigger a model swap mid-session, because those signals are transient. When working correctly this is invisible to the user.
 
@@ -101,13 +101,13 @@ The scoring is a heuristic, not a guarantee; real throughput varies with ROM and
 
 ### Expected outcome on the target device
 
-The 13R (12 GB, Snapdragon 8 Gen 3) should be recommended **Qwen3 8B Q4_K_M**, roughly 4.9 GB resident, at an expected 8-12 tokens/second. This is readable-as-generated with a 1-2 second delay before the first token, and the device will warm and throttle somewhat under sustained generation. A 4B alternative (15-25 tok/s, ~3 GB) remains available for users who prefer speed over quality.
+Measured on the real device: MemTotal is 10.95 GB (not 12 — firmware reserves ~1 GB) and MemAvailable is typically 3-3.5 GB with normal apps running. At that budget the recommendation is **Qwen3.5 2B Q6** (Tvara++), ~1.5 GB, at an estimated 33 tok/s. The 8B becomes viable only when ~8 GB is free. The recommendation is dynamic and re-derived on every scan, so closing background apps changes it.
 
 ## 7. First-Run Flow
 
 The model cannot be bundled: app store upload limits are around 200 MB and an 8B Q4 model is roughly 4.9 GB. The model always downloads separately.
 
-First launch presents the device scan as a JARVIS boot sequence, with the diagnostics as genuine readouts:
+First launch presents the device scan as a boot sequence, with the diagnostics as genuine readouts:
 
 ```
 SYSTEM SCAN
